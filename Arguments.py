@@ -19,7 +19,6 @@ def get_args():
                         help='repeating times')
     parser.add_argument('--not_add_edge', action="store_true")
     parser.add_argument('--not_drop_edge', action="store_true")
-    parser.add_argument('--not_drop_feature_random', action="store_true")
     parser.add_argument('--add_single', action='store_true')
     parser.add_argument('--add_edge_random', action="store_true")
     parser.add_argument('--batch_compute', action="store_true")

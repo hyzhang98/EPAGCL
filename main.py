@@ -13,9 +13,9 @@ from Linear_evaluation import linear_evaluation
 from Load_data import get_dataset
 from Arguments import get_args
 
-def train(data, edge_weights, adding_edge, dropping_edge_weights, dropping_feature_weights, args):
+def train(data, edge_weights, adding_edge, dropping_edge_weights, args):
     model = MyModel(data.num_features, args.feat_dim, args.proj_hidden_dim, args.temperature).to(args.device)
-    optimizer = get_optim(model.parameters(), args.optim, args.lr, args.weight_decay)
+    optimizer = get_optim(model.parameters(), args)
 
     best_ac = 0.
     # flops, _ = profile(model, inputs=(data.x, data.edge_index))
@@ -33,9 +33,10 @@ def train(data, edge_weights, adding_edge, dropping_edge_weights, dropping_featu
             e1 = data.edge_index
             e2 = data.edge_index
 
-        # edge_index_1 = add_edge_random(e1)
-        # edge_index_2 = add_edge_random(e2)
-        if args.add_edge:
+        if args.add_edge_random:
+            edge_index_1 = add_edge_random(e1)
+            edge_index_2 = add_edge_random(e2)
+        elif args.add_edge:
             edge_index_1 = add_edges(edge_weights, adding_edge, e1)
             edge_index_2 = add_edges(edge_weights, adding_edge, e2)
         else:
@@ -44,12 +45,8 @@ def train(data, edge_weights, adding_edge, dropping_edge_weights, dropping_featu
         if args.add_single:
             edge_index_2 = e2
 
-        if args.drop_feature_random:
-            x_1 = drop_feature_random(data.x, args.feat_drop_rate_1)
-            x_2 = drop_feature_random(data.x, args.feat_drop_rate_2)
-        else:
-            x_1 = drop_feature(data.x, args.feat_drop_rate_1, dropping_feature_weights)
-            x_2 = drop_feature(data.x, args.feat_drop_rate_2, dropping_feature_weights)
+        x_1 = drop_feature_random(data.x, args.feat_drop_rate_1)
+        x_2 = drop_feature_random(data.x, args.feat_drop_rate_2)
 
         _, z1 = model(x_1, edge_index_1)
         _, z2 = model(x_2, edge_index_2)
@@ -93,17 +90,13 @@ def setup(data, args):
         dropping_edge_weights = None
     else:
         dropping_edge_weights = drop_edge_weights(data.edge_index)
-    if args.not_drop_feature_random:
-        dropping_feature_weights = drop_feature_weights(data.edge_index).to(data.device)
-    else:
-        dropping_feature_weights = None
-    return adding_edge_weights, adding_edge, dropping_edge_weights, dropping_feature_weights
+    return adding_edge_weights, adding_edge, dropping_edge_weights
 
 if __name__ == '__main__':
     args = get_args()
     data = get_dataset(args.dataset_path, args.dataset).to(args.device)
     t0 = time()
-    adding_edge_weights, adding_edge, dropping_edge_weights, dropping_feature_weights = setup(data, args)
+    adding_edge_weights, adding_edge, dropping_edge_weights = setup(data, args)
     t1 = time()
     print(f"Data Processing Time: {t1-t0:.2f}s")
     output_path = args.output_path
@@ -112,7 +105,7 @@ if __name__ == '__main__':
     acc = []
     for i in range(args.repeat):
         args.output_path = output_path + '/' + str(i+1)
-        ac, z = train(data, adding_edge_weights, adding_edge, dropping_edge_weights, dropping_feature_weights, args)
+        ac, z = train(data, adding_edge_weights, adding_edge, dropping_edge_weights, args)
         acc.append(ac)
 
     acc = np.array(acc)

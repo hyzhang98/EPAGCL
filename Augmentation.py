@@ -65,20 +65,6 @@ def drop_feature_random(x, drop_prob):
     x[:, drop_mask] = 0
     return x
 
-def drop_feature(x, drop_prob, weight):
-    drop_mask = torch.empty(x.size(), dtype=torch.float32, device=x.device).uniform_(0,1) < torch.ones(x.size(), device=x.device) * drop_prob * weight
-    x = x.clone()
-    x[drop_mask] = 0
-    return x
-
-def drop_feature_weights(edge_index):
-    edge_index = to_undirected(edge_index)
-    deg = degree(edge_index[1])
-    w = 1 / (deg + 1)
-    weights = (- 0.5 * w - 0.5 * w.min() -w.max()) / (w.max()-w.min())
-    weights = weights.view(-1,1)
-    return weights
-
 # ——————————————————————————————Auxiliary Function——————————————————————————————
 
 def get_index(node_num, node_list):
